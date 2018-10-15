@@ -1,0 +1,10 @@
+test
+testOnly
+testOnly src/main/scala/RichRegex.scala
+testOnly edu.ucsb.cs.cs162.regex
+testOnly edu.ucsb.cs.cs162.regex.RichRegex.scala
+consoleQuick
+test
+clear
+cls
+test

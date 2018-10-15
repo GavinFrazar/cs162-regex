@@ -66,7 +66,7 @@ class DerivativeMachine(re: Regex) {
   //----------------------------------------------------------------------------
 
   // Derives a regular expression from the top of 'operands' w.r.t. 'char'.
-  @annotation.tailrec
+  //@annotation.tailrec
   private def run(operands: Seq[Regex], program: Program, char: Char): Regex = {
     if (program.isEmpty) {
       assert(operands.size == 1)
