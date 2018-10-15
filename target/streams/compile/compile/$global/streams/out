@@ -1,4 +1,25 @@
-[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:68:8: not found: type tailrec[0m
-[0m[[0m[31merror[0m] [0m[0m      @tailrec[0m
-[0m[[0m[31merror[0m] [0m[0m       ^[0m
-[0m[[0m[31merror[0m] [0m[0mone error found[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:30:13: not found: value r[0m
+[0m[[0m[31merror[0m] [0m[0m      case (r.*, `ε`) => r.* [0m
+[0m[[0m[31merror[0m] [0m[0m            ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:30:26: not found: value r[0m
+[0m[[0m[31merror[0m] [0m[0m      case (r.*, `ε`) => r.* [0m
+[0m[[0m[31merror[0m] [0m[0m                         ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:31:18: not found: value r[0m
+[0m[[0m[31merror[0m] [0m[0m      case (`ε`, r.*) => r.*[0m
+[0m[[0m[31merror[0m] [0m[0m                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:31:26: not found: value r[0m
+[0m[[0m[31merror[0m] [0m[0m      case (`ε`, r.*) => r.*[0m
+[0m[[0m[31merror[0m] [0m[0m                         ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:32:17: stable identifier required, but `package`.this.RegexBuilder(Regex.α).* found.[0m
+[0m[[0m[31merror[0m] [0m[0m      case (`α`.*, r) => `α`.*[0m
+[0m[[0m[31merror[0m] [0m[0m                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:33:20: stable identifier required, but `package`.this.RegexBuilder(Regex.α).* found.[0m
+[0m[[0m[31merror[0m] [0m[0m      case (r, `α`.*) => `α`.*[0m
+[0m[[0m[31merror[0m] [0m[0m                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:42:12: not found: value r[0m
+[0m[[0m[31merror[0m] [0m[0m      case r.* => r.*[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/gavin/projects/scala/CS162-regex/src/main/scala/RichRegex.scala:42:19: not found: value r[0m
+[0m[[0m[31merror[0m] [0m[0m      case r.* => r.*[0m
+[0m[[0m[31merror[0m] [0m[0m                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m8 errors found[0m

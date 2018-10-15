@@ -46,8 +46,8 @@ object `package` {
     // Complement 're', simplifying if possible (assumes that 're' has already
     // been simplified).
     def unary_! : Regex = re match {
-      case `∅` => KleeneStar(`α`)
-      case `ε` => `α` ~ KleeneStar(`α`)
+      case `∅` => `α`.*
+      case `ε` => `α` ~ `α`.*
       case r => Complement(r)
     }
 
@@ -56,7 +56,7 @@ object `package` {
     def &(other: Regex): Regex = Intersect(re, other) 
 
     // Shorthand for 1 or more repetitions of re regex.
-    def + : Regex = re ~ KleeneStar(re)
+    def + : Regex = re ~ re.*
 
     // Shorthand for 0 or 1 instances of re regex.
     def ? : Regex = `ε` | re
@@ -74,7 +74,7 @@ object `package` {
     }
 
     // Shorthand for at least 'min' repetitions of re regex.
-    def >=(min: Int): Regex = (re^min) ~ KleeneStar(re)
+    def >=(min: Int): Regex = (re^min) ~ re.*
 
     // Shorthand for at most 'max' repetitions of re regex.
     def <=(max: Int): Regex = {

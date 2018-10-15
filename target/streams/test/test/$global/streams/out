@@ -2,7 +2,7 @@
 [0m[[0m[0mdebug[0m] [0m[0mForking tests - parallelism = false[0m
 [0m[[0m[0mdebug[0m] [0m[0mCreate a single-thread test executor[0m
 [0m[[0m[0mdebug[0m] [0m[0mRunner for org.scalatest.tools.Framework produced 3 initial tasks for 3 tests.[0m
-[0m[[0m[0mdebug[0m] [0m[0m  Running TaskDef(edu.ucsb.cs.cs162.range_set.RangeSetSpec, sbt.ForkMain$SubclassFingerscan@70865253, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0m  Running TaskDef(edu.ucsb.cs.cs162.range_set.RangeSetSpec, sbt.ForkMain$SubclassFingerscan@8a1a3bc, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mRangeSetSpec:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32ma range set[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m- should be constructable with arbitrary type-correct inputs 1[0m[0m
@@ -17,13 +17,13 @@
 [0m[[0m[0minfo[0m] [0m[0m[32m- should compute set equality correctly[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m- should handle extreme ranges correctly[0m[0m
 [0m[[0m[0mdebug[0m] [0m[0m    Produced 0 nested tasks and 11 events.[0m
-[0m[[0m[0mdebug[0m] [0m[0m  Running TaskDef(edu.ucsb.cs.cs162.regex.derivative.DeriveSpec, sbt.ForkMain$SubclassFingerscan@73940db5, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0m  Running TaskDef(edu.ucsb.cs.cs162.regex.derivative.DeriveSpec, sbt.ForkMain$SubclassFingerscan@278b0f9, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mDeriveSpec:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mmatches[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[33m- should recognize strings in the language 1 (pending)[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[33m- should not recognize strings not in the language 1 (pending)[0m[0m
 [0m[[0m[0mdebug[0m] [0m[0m    Produced 0 nested tasks and 2 events.[0m
-[0m[[0m[0mdebug[0m] [0m[0m  Running TaskDef(edu.ucsb.cs.cs162.regex.RegexSpec, sbt.ForkMain$SubclassFingerscan@5280a3ef, false, [SuiteSelector])[0m
+[0m[[0m[0mdebug[0m] [0m[0m  Running TaskDef(edu.ucsb.cs.cs162.regex.RegexSpec, sbt.ForkMain$SubclassFingerscan@3dda4c57, false, [SuiteSelector])[0m
 [0m[[0m[0minfo[0m] [0m[0m[32mRegexSpec:[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32ma regex[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[32m- should be buildable using convenience methods 1[0m[0m
@@ -43,7 +43,7 @@
 [0m[[0m[0minfo[0m] [0m[0m[33m- should recognize a nullable regex 1 (pending)[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[33m- should recognize a non-nullable regex 1 (pending)[0m[0m
 [0m[[0m[0mdebug[0m] [0m[0m    Produced 0 nested tasks and 15 events.[0m
-[0m[[0m[0minfo[0m] [0m[0m[36mRun completed in 2 seconds, 516 milliseconds.[0m[0m
+[0m[[0m[0minfo[0m] [0m[0m[36mRun completed in 2 seconds, 716 milliseconds.[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[36mTotal number of tests run: 24[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[36mSuites: completed 3, aborted 0[0m[0m
 [0m[[0m[0minfo[0m] [0m[0m[36mTests: succeeded 24, failed 0, canceled 0, ignored 0, pending 4[0m[0m
