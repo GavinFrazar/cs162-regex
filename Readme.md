@@ -88,6 +88,19 @@ Simplifications:
 
 The other methods do not require simplifications.
 
+### Intersection: `re1 & re2`
+
+The `&` operator returns an intersection of two languages.
+
+Simplifications:
+
+  - `∅ & r => ∅`
+  - `r & ∅ => ∅`
+  - `{a} & {b} => {a ∩ b}`
+  - `α* & r => r`
+  - `r & α* => r`
+  - `r & r => r`
+
 ## Part 2: Derivative machine
 
 You need to implement the virtual machine for computing derivatives, as talked about in class. You will implement the following methods:

@@ -13,11 +13,81 @@ class RegexSpec extends FlatSpec with Matchers {
   val c = Chars('c')
   val d = Chars('d')
 
+  val r = Chars('a') | Chars('b').+
+  val r1 = Chars('x', 'y').* ~ r
+  val r2 = Chars('y', 'x').+ ~ r
   //----------------------------------------------------------------------------
   // Tests.
   // ---------------------------------------------------------------------------
 
   behavior of "a regex"
+
+  it should "be buildable using `~`" in {
+    (r1 ~ r2) should equal (Concatenate(r1, r2))
+    // simplifications
+    (r ~ ∅) should equal(∅)
+    (∅ ~ r) should equal(∅)
+    (r ~ ε) should equal(r)
+    (ε ~ r) should equal(r)
+  }
+
+
+  it should "be buildable using `|`" in {
+    (r1 | r2) should equal(Union(r1, r2))
+    // simplifications
+    (r | ∅) should equal(r)
+    (∅ | r) should equal(r)
+    (Chars('a' -> 'c') | Chars('c' -> 'f')) should equal(Chars('a'->'f'))
+    (r.* |   ε) should equal(r.*)
+    (ε   | r.*) should equal(r.*)
+    (α.* |   r) should equal(α.*)
+    (r |   α.*) should equal(α.*)
+    (r | r)     should equal(r)
+  }
+
+  it should "be buildable using `*`" in {
+    r.* should equal(KleeneStar(r))
+    // simplifications
+    ∅.* should equal(ε)
+    ε.* should equal(ε)
+    (r.*).* should equal(r.*)
+  }
+
+  it should "be buildable using `!`" in {
+    !r should equal(Complement(r))
+    // Simplifications
+    !(!r) should equal(r)
+    !(∅) should equal(α.*)
+    !ε should equal(α.+)
+  }
+
+  it should "be buildable using `&`" in {
+    (r1 & r2) should equal(Intersect(r1, r2))
+    // Simplifications
+    (∅ & r) should equal(∅)
+    (r & ∅) should equal(∅)
+    (Chars('a'->'d') & Chars('c'->'f')) should equal (Chars('c'->'d'))
+    (α.* & r) should equal(r)
+    (r & α.*) should equal(r)
+    (r & r) should equal(r)
+  }
+
+  it should "be buildable using `^`" in {
+    (r^5) should equal(r ~ r ~ r ~ r ~ r)
+  }
+
+  it should "be buildable using `>=`" in {
+    (r >= 3) should equal(r ~ r ~ r ~ r.*)
+  }
+
+  it should "be buildable using `<=`" in {
+    (r <= 3) should equal(ε | r | (r ~ r) | (r ~ r ~ r))
+  }
+
+  it should "be buildable using `<=>`" in {
+    (r <>(2, 3)) should equal((r ~ r ~ r.*) & (ε | r | (r ~ r) | (r ~ r ~ r)))
+  }
+
 
   it should "be buildable using convenience methods 1" in {
     (b ~ c) should equal (Concatenate(b, c))
