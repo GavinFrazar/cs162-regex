@@ -6,7 +6,7 @@ import edu.ucsb.cs.cs162.regex._
 
 object `package` {
   // Programs for the DerivativeMachine.
-  type Program = Seq[Instruction]
+  type Program = List[Instruction]
 
   // Pretty-print derivative virtual machine programs.
   def programToString(prog: Program): String = {
@@ -19,7 +19,7 @@ object `package` {
       case `PushNullable` => "nullable"
       case PushRe(re) => "push " + re.toString
     }
-
+  
     strs.mkString("\n")
   }
 }
@@ -56,22 +56,107 @@ class DerivativeMachine(re: Regex) {
   //----------------------------------------------------------------------------
 
   // Returns true iff 'str' is recognized by 're'.
-  def eval(str: String): Boolean = ???
+  def eval(str: String): Boolean = {
+    (re /: str)(
+      (currentRe,char) => run(List(currentRe), List(PushDerive), char)
+    ).nullable == ε
+  }
 
   // Returns the derivative of 're' w.r.t. 'char'.
-  def derive(char: Char): Regex = ???
+  def derive(char: Char): Regex = run(List(re), List(PushDerive), char)
 
   //----------------------------------------------------------------------------
   // Private details.
   //----------------------------------------------------------------------------
 
   // Derives a regular expression from the top of 'operands' w.r.t. 'char'.
-  //@annotation.tailrec
-  private def run(operands: Seq[Regex], program: Program, char: Char): Regex = {
+  @annotation.tailrec
+  private def run(operands: List[Regex], program: Program, char: Char): Regex = {
     if (program.isEmpty) {
       assert(operands.size == 1)
       operands.head
     }
-    else ???
+    else {
+      program.head match {
+        case PushDerive => operands.head match {
+          case `∅` | `ε` => ∅
+          case Chars(chars) => if (chars.contains(char)) ε else ∅
+          case Concatenate(r1, r2) => {
+            run(operands.drop(1),
+                PushRe(r2) ::
+                  PushDerive ::
+                  PushRe(r1) ::
+                  PushNullable ::
+                  PushConcatenate ::
+                  PushRe(r2) ::
+                  PushRe(r1) ::
+                  PushDerive ::
+                  PushConcatenate ::
+                  PushUnion ::
+                  program.drop(1), char
+            )
+          }
+          case Union(r1, r2) => {
+            run(operands.drop(1),
+                PushRe(r2) ::
+                  PushDerive ::
+                  PushRe(r1) ::
+                  PushDerive ::
+                  PushUnion ::
+                  program.drop(1), char
+                )
+          }
+          case rek @ KleeneStar(r) => {
+            run(operands.drop(1),
+                PushRe(rek) ::
+                  PushRe(r) ::
+                  PushDerive ::
+                  PushConcatenate ::
+                  program.drop(1), char
+
+            )
+          }
+          case Complement(r) => {
+            run(operands.drop(1),
+                PushRe(r) ::
+                  PushDerive ::
+                  PushComplement ::
+                  program.drop(1), char
+            )
+          }
+          case Intersect(r1, r2) => {
+            run(operands.drop(1),
+                PushRe(r2) ::
+                  PushDerive ::
+                  PushRe(r1) ::
+                  PushDerive ::
+                  PushIntersect ::
+                  program.drop(1), char
+            )
+          }
+        }
+        case PushConcatenate => {
+          val r1 :: r2 :: Nil = operands.take(2)
+          run((r1 ~ r2) :: operands.drop(2), program.drop(1), char)
+        }
+        case PushUnion => {
+          val r1 :: r2 :: Nil = operands.take(2)
+          run((r1 | r2) :: operands.drop(2), program.drop(1), char)
+        }
+        case PushComplement => {
+          val r :: Nil = operands.take(1)
+          run((!r) :: operands.drop(1), program.drop(1), char)
+        }
+        case PushIntersect => {
+          val r1 :: r2 :: Nil = operands.take(2)
+          run((r1 & r2) :: operands.drop(2), program.drop(1), char)
+        }
+        case PushNullable => {
+          val r :: Nil = operands.take(1)
+          run(r.nullable :: operands.drop(1), program.drop(1), char)
+        }
+        case PushRe(r) => run(r :: operands, program.drop(1), char)
+      }
+    }
   }
 }
