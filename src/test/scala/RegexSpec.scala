@@ -145,11 +145,56 @@ class RegexSpec extends FlatSpec with Matchers {
 
   behavior of "nullable"
 
-  it should "recognize a nullable regex 1" in { pending }
+  it should "recognize a nullable regex 1" in {
+    (KleeneStar(∅).nullable) should equal (ε)
+  }
+
+  it should "recognize a nullable regex 2" in {
+    (ε.nullable) should equal (ε)
+  }
+
+  it should "recognize a nullable regex 3" in {
+    (Union(∅, ε).nullable) should equal (ε)
+  }
+
+  it should "recognize a nullable regex 4" in {
+    (Complement(∅).nullable) should equal (ε)
+  }
+
+  it should "recognize a nullable regex 5" in {
+    (Intersect(b.*, ε).nullable) should equal (ε)
+  }
+
+  it should "recognize a nullable regex 6" in {
+    (KleeneStar(c).nullable) should equal (ε)
+  }
+
 
   // more tests...
 
-  it should "recognize a non-nullable regex 1" in { pending }
+  it should "recognize a non-nullable regex 1" in {
+    (b.nullable) should equal (∅)
+  }
+
+  it should "recognize a non_nullable regex 2" in {
+    (∅.nullable) should equal (∅)
+  }
+
+  it should "recognize a non_nullable regex 3" in {
+    (Union(∅, b).nullable) should equal (∅)
+  }
+
+  it should "recognize a non_nullable regex 4" in {
+    (Complement(ε).nullable) should equal (∅)
+  }
+
+  it should "recognize a non_nullable regex 5" in {
+    (Intersect(c.*, c >= 1).nullable) should equal (∅)
+  }
+
+  it should "recognize a non-nullable regex 6" in {
+    (Concatenate(∅, ε).nullable) should equal (∅)
+  }
 
   // more tests...
 }
