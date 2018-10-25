@@ -91,55 +91,59 @@ class DerivativeMachine(re: Regex) {
           }
           case Concatenate(r1, r2) => {
             run(operands.drop(1),
-                PushRe(r2) +:
-                  PushDerive +:
-                  PushRe(r1) +:
-                  PushNullable +:
-                  PushConcatenate +:
-                  PushRe(r2) +:
-                  PushRe(r1) +:
-                  PushDerive +:
-                  PushConcatenate +:
-                  PushUnion +:
-                  program.drop(1), char
+                Seq(PushRe(r2),
+                    PushDerive,
+                    PushRe(r1),
+                    PushNullable,
+                    PushConcatenate,
+                    PushRe(r2),
+                    PushRe(r1),
+                    PushDerive,
+                    PushConcatenate,
+                    PushUnion) ++
+                  program.drop(1),
+                char
             )
           }
           case Union(r1, r2) => {
             run(operands.drop(1),
-                PushRe(r2) +:
-                  PushDerive +:
-                  PushRe(r1) +:
-                  PushDerive +:
-                  PushUnion +:
-                  program.drop(1), char
-                )
+                Seq(PushRe(r2),
+                    PushDerive,
+                    PushRe(r1),
+                    PushDerive,
+                    PushUnion) ++
+                  program.drop(1),
+                char
+            )
           }
           case rek @ KleeneStar(r) => {
             run(operands.drop(1),
-                PushRe(rek) +:
-                  PushRe(r) +:
-                  PushDerive +:
-                  PushConcatenate +:
-                  program.drop(1), char
-
+                Seq(PushRe(rek),
+                    PushRe(r),
+                    PushDerive,
+                    PushConcatenate) ++
+                  program.drop(1),
+                char
             )
           }
           case Complement(r) => {
             run(operands.drop(1),
-                PushRe(r) +:
-                  PushDerive +:
-                  PushComplement +:
-                  program.drop(1), char
+                Seq(PushRe(r),
+                    PushDerive,
+                    PushComplement) ++
+                  program.drop(1),
+                char
             )
           }
           case Intersect(r1, r2) => {
             run(operands.drop(1),
-                PushRe(r2) +:
-                  PushDerive +:
-                  PushRe(r1) +:
-                  PushDerive +:
-                  PushIntersect +:
-                  program.drop(1), char
+                Seq(PushRe(r2),
+                    PushDerive,
+                    PushRe(r1),
+                    PushDerive,
+                    PushIntersect) ++
+                  program.drop(1),
+                char
             )
           }
         }
