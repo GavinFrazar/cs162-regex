@@ -79,8 +79,16 @@ class DerivativeMachine(re: Regex) {
     else {
       program.head match {
         case PushDerive => operands.head match {
-          case `∅` | `ε` => ∅
-          case Chars(chars) => if (chars.contains(char)) ε else ∅
+          case `∅` | `ε` => run(∅ +: operands.drop(1), program.drop(1), char) 
+          case Chars(chars) => {
+            val r = ( 
+              if (chars.contains(char))
+                ε
+              else
+                ∅
+            )
+            run(r +: operands.drop(1), program.drop(1), char)
+          }
           case Concatenate(r1, r2) => {
             run(operands.drop(1),
                 PushRe(r2) +:
@@ -159,4 +167,8 @@ class DerivativeMachine(re: Regex) {
       }
     }
   }
+}
+
+object DerivativeMachine {
+  def apply(re: Regex) = new DerivativeMachine(re)
 }
