@@ -162,4 +162,43 @@ class DeriveSpec extends FlatSpec with Matchers {
     (DerivativeMachine(c.* & c).eval("")) should equal (false)
   }
 
+  behavior of "derive"
+
+  it should "take the derivative of ∅ wrt a char" in {
+    DerivativeMachine(∅).derive('a') should equal (∅) 
+  }
+
+  it should "take the derivative of ε wrt a char" in {
+    DerivativeMachine(ε).derive('a') should equal (∅)
+  }
+  
+  it should "take the derivative of a charset wrt a char" in {
+    DerivativeMachine("abc".charset).derive('b') should equal (ε)
+  }
+
+  it should "take the derivative of concatenated Chars wrt a char" in {
+    DerivativeMachine("ab".concatenate).derive('a') should
+    equal ("b".concatenate)
+  }
+
+  it should "take the derivative of a*b wrt a" in {
+    DerivativeMachine("a".charset.* ~ "b".charset).derive('a') should
+    equal ("a".charset.* ~ "b".charset)
+  }
+
+  it should "take the derivative of !b wrt b" in {
+    DerivativeMachine(!b).derive('b') should equal (α ~ α.*)
+  }
+
+  it should "take the derivative of !b wrt c" in {
+    DerivativeMachine(!b).derive('c') should equal (α.*)
+  }
+
+  it should "take the derivative of re1 & b wrt b" in {
+    DerivativeMachine(re1 & b).derive('b').nullable should equal (ε)
+  }
+
+  it should "take the derivative of b ~ b.* wrt b" in {
+    DerivativeMachine(b ~ b.*).derive('b') should equal (b.*)
+  }
 }

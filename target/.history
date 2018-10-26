@@ -10,3 +10,8 @@ cls
 test
 exit
 test
+testOnly eval
+exit
+test
+clean
+exit
