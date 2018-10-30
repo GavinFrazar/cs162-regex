@@ -3,6 +3,8 @@
 
 package edu.ucsb.cs.cs162.regex
 
+import edu.ucsb.cs.cs162.regex.derivative._
+
 object `package` {
   import Regex._
 
@@ -19,6 +21,20 @@ object `package` {
       case (r, `∅`) => `∅`
       case (`ε`, r) => r 
       case (r, `ε`) => r
+      // This case should come after all other cases that handle concatenation
+      // simplification. It handles the case where the concatenation is not
+      // right-associative, and transforms it into right-associative form. There
+      // should be a default case after this one that handles anything that this
+      // case and the prior simplification cases don't handle.
+      case (_: Concatenate, _) => {
+        // Replace the right-most concatenation in 're' with the concatenation
+        // to 'other'.
+        def replaceRight(re: Regex) : Regex = re match {
+          case Concatenate(re1, re2) => Concatenate(re1, replaceRight(re2))
+          case _ => Concatenate(re, other)
+        }
+        replaceRight(re)
+      }
       case (r1, r2) => Concatenate(r1, r2)
     }
 
@@ -33,8 +49,21 @@ object `package` {
       case (KleeneStar(`α`), r) => KleeneStar(`α`)
       case (r, KleeneStar(`α`)) => KleeneStar(`α`)
       case (r1, r2) if r1 == r2 => r1
+      // This case should come after all other cases that handle union
+      // simplification. It ensures that unions are right-associative and the
+      // operands are ordered correctly.
+      case _ => {
+        // Collect together all immediate non-Union sub-expressions.
+        def collect(re: Regex): Set[Regex] = re match {
+          case Union(re1, re2) => collect(re1) ++ collect(re2)
+          case _ => Set(re)
+        }
+        val subexpressions = collect(re) ++ collect(other)
+        associate(subexpressions.toSeq, (re1, re2) => Union(re1, re2))
+      }
       case (r1, r2) => Union(r1,r2)
     }
+
     // Apply the Kleene star to 're', simplifying if possible (assumes that 're'
     // has already been simplified).
     def * : Regex = re match {
@@ -62,6 +91,18 @@ object `package` {
       case (KleeneStar(`α`), r) => r
       case (r, KleeneStar(`α`)) => r
       case (r1, r2) if r1 == r2 => r1
+      // This case should come after all other cases that handle intersection
+      // simplification. It ensures that intersections are right-associative and
+      // the operands are ordered correctly.
+      case _ => {
+        // Collect together all immediate non-Intersect sub-expressions.
+        def collect(re: Regex): Set[Regex] = re match {
+          case Intersect(re1, re2) => collect(re1) ++ collect(re2)
+          case _ => Set(re)
+        }
+        val subexpressions = collect(re) ++ collect(other)
+        associate(subexpressions.toSeq, (re1, re2) => Intersect(re1, re2))
+      }
       case (r1, r2) => Intersect(r1, r2)
     }
 
@@ -102,7 +143,15 @@ object `package` {
 
     // Shorthand for at least 'min' but at most 'max' repetitions of re regex.
     def <>(min: Int, max: Int): Regex = (re >= min) & (re <= max)
-  }
+
+    //----------------------------------------------------------------------------
+    // Private details.
+    //----------------------------------------------------------------------------
+
+    // Sort the subterms of a Regex in lexicographic order.
+    private def associate(res: Seq[Regex], join: (Regex, Regex) => Regex): Regex =
+      res.sortWith((re1, re2) => re2 lessThanEq re1).reduceLeft(
+        (acc, re) => join(re, acc))
 
   // Add convenient methods to String for building simple regular expressions.
   implicit class StringToRegex(val str: String) extends AnyVal {
@@ -127,6 +176,56 @@ object `package` {
       case Union(re1, re2) => re1.nullable | re2.nullable
       case Complement(re1) => if (re1.nullable == ε) ∅ else ε
       case Intersect(re1, re2) => re1.nullable & re2.nullable
+    }
+
+    // Returns true iff the language recognized by 're' is empty.
+    def empty: Boolean =
+      DerivativeAnalysis.analyze(re).fin.isEmpty
+
+    // Returns true iff the language of 'other' is contained in the language of
+    // 're'.
+    def contains(other: Regex): Boolean =
+      (other & !re).empty
+
+    // Returns true iff the language of 're' is the same as the language of
+    // 'other'.
+    def equivalent(other: Regex): Boolean =
+      re.contains(other) && other.contains(re)
+
+    // Returns true if 're' <= 'other' according to a lexicographic ordering
+    // of the regex ASTs.
+    def lessThanEq(other: Regex): Boolean = (re, other) match {
+      case (`∅`, _) => true
+      case (_, `∅`) => false
+      case (`ε`, _) => true
+      case (_, `ε`) => false
+      case (Chars(c1), Chars(c2)) => c1.toString <= c2.toString
+      case (_: Chars, _) => true
+      case (_, _: Chars) => false
+      case (Concatenate(re1, re2), Concatenate(reA, reB)) => {
+        if (re1 == reA) re2 lessThanEq reB
+        else re1 lessThanEq reA
+      }
+      case (_: Concatenate, _) => true
+      case (_, _: Concatenate) => false
+      case (Union(re1, re2), Union(reA, reB)) => {
+        if (re1 == reA) re2 lessThanEq reB
+        else re1 lessThanEq reA
+      }
+      case (_: Union, _) => true
+      case (_, _: Union) => false
+      case (KleeneStar(re1), KleeneStar(reA)) => re1 lessThanEq reA
+      case (_: KleeneStar, _) => true
+      case (_, _: KleeneStar) => false
+      case (Complement(re1), Complement(reA)) => re1 lessThanEq reA
+      case (_: Complement, _) => true
+      case (_, _: Complement) => false
+      case (Intersect(re1, re2), Intersect(reA, reB)) => {
+        if (re1 == reA) re2 lessThanEq reB
+        else re1 lessThanEq reA
+      }
+      case (_: Intersect, _) => true
+      case (_, _: Intersect) => false
     }
   }
 }

@@ -1,0 +1,16 @@
+*.class
+*.log
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+.history
+.cache
+.lib/
+.ensime
+.ensime_cache/
+.ensime_lucene/
+*~
+project
