@@ -38,8 +38,10 @@ object DerivativeAnalysis {
   // Compute the transitions and set of reachable states (i.e., Regexes) for all
   // Regexes in 'todo'.
   @annotation.tailrec
-  private def computeDfa(todo: Set[Regex], visitedStates: Set[Regex],
-                         transitions: Transitions[Regex]) :
+  private def computeDfa(todo: Set[Regex],
+                         visitedStates: Set[Regex],
+                         transitions: Transitions[Regex]
+  ) :
       (Set[Regex], Transitions[Regex]) = {
     if (todo.isEmpty)
       (visitedStates, transitions)
