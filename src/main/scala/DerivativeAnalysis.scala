@@ -18,7 +18,18 @@ object DerivativeAnalysis {
   // Statically analyzes 're' using derivatives in order to compute the DFA of
   // the language recognized by 're'. The resulting DFA has an explicit error
   // state and is approximately minimal.
-  def analyze(re: Regex): Dfa[Regex] = ???
+  def analyze(re: Regex): Dfa[Regex] = {
+    val (states, transitions) = computeDfa(Set(re), Set[Regex](), Map())
+    val fin = (Set[Regex]() /: a) {
+      (set, state) => {
+        if (state.nullable == ε)
+          set + state
+        else
+          set
+      }
+    }
+    Dfa(transitions, re, fin)
+  }
 
   //----------------------------------------------------------------------------
   // Private details.
@@ -28,8 +39,20 @@ object DerivativeAnalysis {
   // Regexes in 'todo'.
   @annotation.tailrec
   private def computeDfa(todo: Set[Regex], visitedStates: Set[Regex],
-    transitions: Transitions[Regex]) : (Set[Regex], Transitions[Regex]) = ???
+                         transitions: Transitions[Regex]) :
+      (Set[Regex], Transitions[Regex]) = {
+    if (todo.isEmpty)
+      (visitedStates, transitions)
+    else {
+      val (new_states, new_transitions) = computeNext(todo.head)
+      computeDfa(todo.tail ++ new_states,
+                 visitedStates ++ new_states,
+                 transitions ++ new_transitions
+      )
+    }
+  }
 
   // Compute the transitions and destination states from the given regex.
   private def computeNext(state: Regex): (Set[Regex], Transitions[Regex]) = ???
+
 }
