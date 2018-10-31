@@ -61,7 +61,6 @@ object `package` {
         val subexpressions = collect(re) ++ collect(other)
         associate(subexpressions.toSeq, (re1, re2) => Union(re1, re2))
       }
-      case (r1, r2) => Union(r1,r2)
     }
 
     // Apply the Kleene star to 're', simplifying if possible (assumes that 're'
@@ -103,7 +102,6 @@ object `package` {
         val subexpressions = collect(re) ++ collect(other)
         associate(subexpressions.toSeq, (re1, re2) => Intersect(re1, re2))
       }
-      case (r1, r2) => Intersect(r1, r2)
     }
 
     // Shorthand for 1 or more repetitions of re regex.
@@ -152,19 +150,20 @@ object `package` {
     private def associate(res: Seq[Regex], join: (Regex, Regex) => Regex): Regex =
       res.sortWith((re1, re2) => re2 lessThanEq re1).reduceLeft(
         (acc, re) => join(re, acc))
-
-  // Add convenient methods to String for building simple regular expressions.
-  implicit class StringToRegex(val str: String) extends AnyVal {
-    // Builds the concatenation of each character in 'str' in sequence. Example:
-    // "abc".concatenate == Chars('a') ~ Chars('b') ~ Chars('c').
-    def concatenate: Regex =
-      str.foldLeft(ε: Regex)((acc, char) => acc ~ Chars(char))
-
-    // Builds a charset containing each character in 'str'. Example:
-    // "abc".charset == Chars('a', 'b', 'c').
-    def charset: Regex =
-      if (str.isEmpty) ε else Chars(str.toSeq: _*)
   }
+
+    // Add convenient methods to String for building simple regular expressions.
+    implicit class StringToRegex(val str: String) extends AnyVal {
+      // Builds the concatenation of each character in 'str' in sequence. Example:
+      // "abc".concatenate == Chars('a') ~ Chars('b') ~ Chars('c').
+      def concatenate: Regex =
+        str.foldLeft(ε: Regex)((acc, char) => acc ~ Chars(char))
+
+      // Builds a charset containing each character in 'str'. Example:
+      // "abc".charset == Chars('a', 'b', 'c').
+      def charset: Regex =
+        if (str.isEmpty) ε else Chars(str.toSeq: _*)
+    }
   
   // Operations on regular expressions.
   implicit class RegexOps(val re: Regex) extends AnyVal {
