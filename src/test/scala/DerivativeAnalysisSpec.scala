@@ -52,7 +52,15 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
   }
 
   it should "produce a DFA that recognizes the strings in language 2" in {
-    pending
+    val charA = Chars('a')
+    val charB = Chars('b')
+    val dfa = analyzeWithTimeout((charA ~ charB | charA ~ charB.*).*)
+
+    dfa.matches("") should equal (true)
+    dfa.matches("ab") should equal (true)
+    dfa.matches("abbbbbbbbbbbb") should equal (true)
+    dfa.matches("aa") should equal (true)
+    dfa.matches("b") should equal (false)
   }
 
   // more tests...
