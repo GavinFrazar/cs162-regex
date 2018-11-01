@@ -21,11 +21,11 @@ object DerivativeAnalysis {
   def analyze(re: Regex): Dfa[Regex] = {
     val (states, transitions) = computeDfa(Set(re), Set[Regex](), Map())
     val fin = (Set[Regex]() /: states) {
-      (set, state) => {
+      (acc_set, state) => {
         if (state.nullable == ε)
-          set + state
+          acc_set + state
         else
-          set
+          acc_set
       }
     }
     Dfa(transitions, re, fin)
@@ -72,16 +72,14 @@ object DerivativeAnalysis {
     r match {
       case `∅` => Set(Σ)
       case `ε` => Set(Σ)
-      case Chars(s) if s != Σ => Set(s, !(Σ & s))
+      case Chars(s) if s != Σ => Set(s, Σ & (!s))
       case KleeneStar(r) => C(r)
       case Complement(r) => C(r)
       case Union(r, s) => C(r) ^ C(s)
       case Intersect(r, s) => C(r) ^ C(s)
-      case Concatenate(r, s) => {
-        if ((!r).nullable == ε)
-          C(r)
-        else
-          C(r) ^ C(s)
+      case Concatenate(r, s) => (!r).nullable match {
+        case `ε` => C(r)
+        case _ => C(r) ^ C(s)
       }
     }
   }
@@ -91,14 +89,13 @@ object DerivativeAnalysis {
     val dvm = DerivativeMachine(state)
     val partitions = C(state)
     val transition_states = (Seq[(CharSet, Regex)]() /: partitions){
-      (to_states, partition) => {
-        to_states :+ (partition, dvm.derive(partition.minElement.get))
+      (acc_states, partition) => partition.minElement match {
+        case Some(char) => acc_states :+ (partition, dvm.derive(char))
+        case None => acc_states
       }
     }
     val transitions = Map(state -> transition_states)
-    val dst_states = (Set[Regex]() /: transition_states){
-      (acc_set, tup) => acc_set + tup._2
-    }
+    val dst_states = transition_states.map(_._2).toSet
     (dst_states, transitions)
   }
 
