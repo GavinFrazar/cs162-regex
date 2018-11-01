@@ -72,7 +72,7 @@ object DerivativeAnalysis {
     r match {
       case `∅` => Set(Σ)
       case `ε` => Set(Σ)
-      case Chars(s) if s != Σ => Set(s, Σ & (!s))
+      case Chars(s) => Set(s, Σ & (!s))
       case KleeneStar(r) => C(r)
       case Complement(r) => C(r)
       case Union(r, s) => C(r) ^ C(s)
