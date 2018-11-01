@@ -57,8 +57,14 @@ object DerivativeAnalysis {
     }
   }
 
-  implicit class PairWiseUnion(charset: Set[CharSet]) {
-    def ^(other: Set[CharSet]): Set[CharSet] = ???
+  implicit class PairWiseUnion(self: Set[CharSet]) {
+    def ^(other: Set[CharSet]): Set[CharSet] = {
+      (Set[CharSet]() /: self){
+        (acc_set, self_charset) => (acc_set /: other){
+          (acc_set, other_charset) => acc_set + (self_charset & other_charset)
+        }
+      }
+    }
   }
 
   def C(r: Regex): Set[CharSet] = {
