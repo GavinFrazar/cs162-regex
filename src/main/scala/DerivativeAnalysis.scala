@@ -20,7 +20,7 @@ object DerivativeAnalysis {
   // state and is approximately minimal.
   def analyze(re: Regex): Dfa[Regex] = {
     val (states, transitions) = computeDfa(Set(re), Set[Regex](), Map())
-    val fin = (Set[Regex]() /: a) {
+    val fin = (Set[Regex]() /: states) {
       (set, state) => {
         if (state.nullable == ε)
           set + state
@@ -41,20 +41,59 @@ object DerivativeAnalysis {
   private def computeDfa(todo: Set[Regex],
                          visitedStates: Set[Regex],
                          transitions: Transitions[Regex]
-  ) :
-      (Set[Regex], Transitions[Regex]) = {
+  ): (Set[Regex], Transitions[Regex]) = {
     if (todo.isEmpty)
       (visitedStates, transitions)
     else {
-      val (new_states, new_transitions) = computeNext(todo.head)
-      computeDfa(todo.tail ++ new_states,
-                 visitedStates ++ new_states,
-                 transitions ++ new_transitions
-      )
+      if (visitedStates.contains(todo.head))
+        computeDfa(todo.tail, visitedStates, transitions)
+      else{
+        val (new_states, new_transitions) = computeNext(todo.head)
+        computeDfa(todo.tail ++ new_states,
+                   visitedStates + todo.head,
+                   transitions ++ new_transitions
+        )
+      }
+    }
+  }
+
+  implicit class PairWiseUnion(charset: Set[CharSet]) {
+    def ^(other: Set[CharSet]): Set[CharSet] = ???
+  }
+
+  def C(r: Regex): Set[CharSet] = {
+    val Σ = α.chars
+    r match {
+      case `∅` => Set(Σ)
+      case `ε` => Set(Σ)
+      case Chars(s) if s != Σ => Set(s, !(Σ & s))
+      case KleeneStar(r) => C(r)
+      case Complement(r) => C(r)
+      case Union(r, s) => C(r) ^ C(s)
+      case Intersect(r, s) => C(r) ^ C(s)
+      case Concatenate(r, s) => {
+        if ((!r).nullable == ε)
+          C(r)
+        else
+          C(r) ^ C(s)
+      }
     }
   }
 
   // Compute the transitions and destination states from the given regex.
-  private def computeNext(state: Regex): (Set[Regex], Transitions[Regex]) = ???
+  private def computeNext(state: Regex): (Set[Regex], Transitions[Regex]) = {
+    val dvm = DerivativeMachine(state)
+    val partitions = C(state)
+    val transition_states = (Seq[(CharSet, Regex)]() /: partitions){
+      (to_states, partition) => {
+        to_states :+ (partition, dvm.derive(partition.minElement.get))
+      }
+    }
+    val transitions = Map(state -> transition_states)
+    val dst_states = (Set[Regex]() /: transition_states){
+      (acc_set, tup) => acc_set + tup._2
+    }
+    (dst_states, transitions)
+  }
 
 }
