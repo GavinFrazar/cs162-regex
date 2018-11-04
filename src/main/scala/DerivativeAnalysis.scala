@@ -59,8 +59,8 @@ object DerivativeAnalysis {
 
   implicit class PairWiseUnion(self: Set[CharSet]) {
     def ^(other: Set[CharSet]): Set[CharSet] = {
-      (Set[CharSet]() /: self){
-        (acc_set, self_charset) => (acc_set /: other){
+      self flatMap {
+        self_charset => (Set[CharSet]() /: other) {
           (acc_set, other_charset) => acc_set + (self_charset & other_charset)
         }
       }
