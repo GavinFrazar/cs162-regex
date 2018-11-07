@@ -227,4 +227,25 @@ class RegexSpec extends FlatSpec with Matchers {
   }
 
   // more tests...
+  behavior of "regex normalization"
+
+  it should "recognize equivalent regex 1" in {
+    val re1 = charA | (charA ~ b)
+    val re2 = (charA ~ b) | charA
+    re1 should equal (re2)
+  }
+
+  it should "recognize equivalent regex 2" in {
+    val re1 = charA ~ b ~ c 
+    val re2 = Concatenate(charA, Concatenate(b, c))
+    re1 should equal (re2)
+  }
+  
+  it should "recognize equivalent regex 3" in {
+    val re1 = (b | c) ~ d ~ (e | f)
+    val re2 = Concatenate((b | c) , Concatenate(d, (e | f)))
+    re1 should equal (re2)
+  }
+  
+
 }

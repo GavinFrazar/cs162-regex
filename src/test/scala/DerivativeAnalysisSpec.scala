@@ -18,6 +18,8 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
   val timeout = 2000
 
   // Analyze the given expression subject to a timeout.
+
+
   def analyzeWithTimeout(re: Regex) =
     timeoutAfter(timeout) { DerivativeAnalysis.analyze(re) }
 
@@ -27,6 +29,7 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
 
   val charA = Chars('a')
   val charB = Chars('b')
+  val charC = Chars('c')
   val re_set = "acdb".charset
   val d = Chars('d')
   val b = Chars('b')
@@ -36,6 +39,7 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
   val Σ = α.chars
   val aSet = CharSet('a')
   val bSet = CharSet('b')
+  val cSet = CharSet('c')
 
   behavior of "the analysis"
 
@@ -50,7 +54,11 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
     // building work well together. If the regexes are not conflated
     // properly, DFA construction would cause a timeout or stack
     // overflow and this test should fail.
-    pending
+    val dfa = analyzeWithTimeout(("aa".concatenate | "aaaa".concatenate).*)
+  }
+
+  it should "should always terminate 3" in{
+    val dfa = analyzeWithTimeout(("a".charset.* | "b".charset.*).*)
   }
 
   // more tests...
@@ -181,13 +189,13 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
     val states = Set(re, charB, ε, ∅)
 
     //check initial state
-    dfa.init shouldEqual (re)
+    dfa.init should equal (re)
 
     //check final states
-    dfa.fin shouldEqual (Set[Regex](ε))
+    dfa.fin should equal (Set[Regex](ε))
 
     // Check if the transition relation is computed for all states
-    (states subsetOf dfa.delta.keySet) should equal (true)
+    dfa.delta.keySet should equal (states)
 
     // Check the transition relation
     (dfa.delta(re) isEquivalentSeq Seq((!aSet, ∅), (aSet, charB))
@@ -206,13 +214,13 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
     val states = Set(re, ε, ∅)
 
     //check initial state
-    dfa.init shouldEqual (re)
+    dfa.init should equal (re)
 
     //check final states
-    dfa.fin shouldEqual(Set[Regex](ε))
+    dfa.fin should equal (Set[Regex](ε))
 
     //check if transitions computed for all states
-    (states subsetOf dfa.delta.keySet) should equal (true)
+    dfa.delta.keySet should equal (states)
 
     // Check the transition relation
     (dfa.delta(re) isEquivalentSeq Seq((!(aSet ++ bSet), ∅), (aSet ++ bSet, ε))
@@ -223,24 +231,105 @@ class DerivativeAnalysisSpec extends FlatSpec with Matchers with Timeout {
 
 
   it should "produce a DFA that has the correct structure 3" in {
-    val re = charA | charB
+    val re = "ab".charset & "bc".charset 
     val dfa = DerivativeAnalysis.analyze(re)
     val states = Set(re, ε, ∅)
 
     //check initial state
-    dfa.init shouldEqual (re)
+    dfa.init should equal (re)
 
     //check final states
-    dfa.fin shouldEqual(Set[Regex](ε))
+    dfa.fin should equal (Set[Regex](ε))
 
     //check if transitions computed for all states
-    (states subsetOf dfa.delta.keySet) should equal (true)
+    dfa.delta.keySet should equal (states)
 
     // Check the transition relation
-    (dfa.delta(re) isEquivalentSeq Seq((!(aSet ++ bSet), ∅), (aSet ++ bSet, ε))
-       should equal (true))
-    (dfa.delta(ε) isEquivalentSeq Seq((Σ, ∅)) should equal (true))
-    (dfa.delta(∅) isEquivalentSeq Seq((Σ, ∅)) should equal (true))
+    dfa.delta(re) isEquivalentSeq Seq((bSet, ε), (!bSet, ∅))
+    dfa.delta(ε) isEquivalentSeq Seq((Σ, ∅)) should equal (true)
+    dfa.delta(∅) isEquivalentSeq Seq((Σ, ∅)) should equal (true)
+  }
+
+
+  it should "produce a DFA that has the correct structure 4" in {
+    val re = charA.*
+    val dfa = DerivativeAnalysis.analyze(re)
+    val states = Set(re, ∅)
+
+    //check initial state
+    dfa.init should equal (re)
+
+    //check final states
+    dfa.fin should equal (Set[Regex](re))
+
+    //check if transitions computed for all states
+    dfa.delta.keySet should equal (states)
+
+    // Check the transition relation
+    (dfa.delta(re) isEquivalentSeq Seq((aSet, re), (!aSet, ∅))) shouldEqual true
+    (dfa.delta(∅) isEquivalentSeq Seq((Σ, ∅))) should equal (true)
+  }
+
+
+  it should "produce a DFA that has the correct structure 5" in {
+    val re = !charA
+    val dfa = DerivativeAnalysis.analyze(re)
+    val states = Set(re, α ~ α.*, α.*)
+
+    //check initial state
+    dfa.init should equal (Complement(charA))
+
+    //check final states
+    dfa.fin should equal (Set[Regex](Complement(charA), α.*))
+
+    //check if transitions computed for all states
+    dfa.delta.keySet should equal (states)
+
+    // Check the transition relation
+    (dfa.delta(Complement(charA)) isEquivalentSeq
+       Seq((aSet, α ~ α.*), (!aSet, α.*))) should equal (true)
+    dfa.delta(α ~ α.*) isEquivalentSeq Seq((Σ, α.*)) should equal (true)
+    dfa.delta(α.*) isEquivalentSeq Seq((Σ, α.*)) should equal (true)
+  }
+
+
+  it should "produce a DFA that has the correct structure 6" in {
+    val re = ε
+    val dfa = DerivativeAnalysis.analyze(re)
+    val states = Set(ε, ∅)
+
+    //check initial state
+    dfa.init should equal (ε)
+
+    //check final states
+    dfa.fin should equal (Set[Regex](ε))
+
+    //check if transitions computed for all states
+    dfa.delta.keySet should equal (states)
+
+    // Check the transition relation
+    (dfa.delta(ε) isEquivalentSeq Seq((Σ, ∅))) should equal (true)
+    dfa.delta(∅) isEquivalentSeq Seq((Σ, ∅)) should equal (true)
+  }
+
+
+  it should "produce a DFA that has the correct structure 7" in {
+    val re = !(charC.*)
+    val dfa = DerivativeAnalysis.analyze(re)
+    val states = Set(re, α.*)
+
+    //check initial state
+    dfa.init should equal (re)
+
+    //check final states
+    dfa.fin should equal (Set[Regex](α.*))
+
+    //check if transitions computed for all states
+    dfa.delta.keySet should equal (states)
+
+    // Check the transition relation
+    (dfa.delta(re) isEquivalentSeq Seq((cSet, re), (!cSet, α.*))) should equal (true)
+    (dfa.delta(α.*) isEquivalentSeq Seq((Σ, α.*))) should equal (true)
   }
 }
 

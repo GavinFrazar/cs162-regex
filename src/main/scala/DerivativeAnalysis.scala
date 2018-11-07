@@ -98,4 +98,5 @@ object DerivativeAnalysis {
     val dst_states = transition_states.map(_._2).toSet
     (dst_states, transitions)
   }
+
 }
