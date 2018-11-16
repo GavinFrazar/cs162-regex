@@ -89,3 +89,73 @@ case class LeftNode(child: ParseTree) extends ParseTree
 case class RightNode(child: ParseTree) extends ParseTree
 case class StarNode(children: Seq[ParseTree]) extends ParseTree
 case class CaptureNode(name: String, child: ParseTree) extends ParseTree
+
+// Provides a way to conveniently access capture groups inside a parse tree.
+class Extractor(tree: ParseTree) {
+  //----------------------------------------------------------------------------
+  // Public API.
+  //----------------------------------------------------------------------------
+
+  // Given an access path (i.e., a sequence of nested capture group names),
+  // return the associated flattened capture group(s) as a sequence of strings.
+  // The sequence may be empty of the given group was not matched during the
+  // parse, or may contain multiple items if the given group(s) was matched more
+  // than once during the parse.
+  def extract(accessPath: String*): Seq[String] = {
+    // Traverse the nested group maps to find the group specified by the given
+    // access path.
+    def lookUp(path: Seq[String], groupMap: GroupMap): Group = {
+      val name = path.head
+      assert(groupMap.contains(name))
+
+      if (path.tail.isEmpty) groupMap(name)
+      else lookUp(path.tail, groupMap(name).children)
+    }
+
+    assert(accessPath.nonEmpty)
+    lookUp(accessPath, groups).value
+  }
+
+  //----------------------------------------------------------------------------
+  // Private details.
+  //----------------------------------------------------------------------------
+
+  private type GroupMap = Map[String, Group]
+
+  // Provides the value of a capture group as a sequence of strings that were
+  // matched by that capture group during parsing, plus a map of nested capture
+  // group names to their own group info.
+  private case class Group(value: Seq[String], children: GroupMap)
+
+  // Extracts the capture group mapping from the given parse tree.
+  private def extractGroups(tree: ParseTree): GroupMap = {
+    // Merge two GroupMaps so that if they contain the same key, the two groups
+    // for that common key are merged into a single group.
+    def mergeGroupMaps(a: GroupMap, b: GroupMap): GroupMap =
+      (a.keySet ++ b.keySet).map(key => key -> {
+        val leftGroup = a.getOrElse(key, Group(Seq(), Map()))
+        val rightGroup = b.getOrElse(key, Group(Seq(), Map()))
+        Group(
+          leftGroup.value ++ rightGroup.value,
+          mergeGroupMaps(leftGroup.children, rightGroup.children))
+      }).toMap
+
+    tree match {
+      case `EmptyLeaf` | _: CharLeaf => Map()
+      case ConcatNode(left, right) => {
+        mergeGroupMaps(extractGroups(left), extractGroups(right))
+      }
+      case LeftNode(child) => extractGroups(child)
+      case RightNode(child) => extractGroups(child)
+      case StarNode(children) => children.foldLeft(Map[String, Group]())(
+        (acc, child) => mergeGroupMaps(acc, extractGroups(child))
+      )
+      case CaptureNode(name, child) => {
+        Map(name -> Group(Seq(child.flatten), extractGroups(child)))
+      }
+    }
+  }
+
+  // The result of extracting capture group info from 'tree'.
+  private val groups = extractGroups(tree)
+}
