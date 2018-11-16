@@ -21,7 +21,7 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
 
     // Execute all given threads until they reach either a MatchSet or an Accept
     // instruction; returns the resulting set of Threads.
-    @annotation.tailrec
+//    @annotation.tailrec
     def runUntilMatchOrAccept(thread: Thread, todo: Set[Thread],
       result: Set[Thread]): Set[Thread] = ???
 
