@@ -25,7 +25,27 @@ class CompileSpec extends FlatSpec with Matchers {
 
   it should "correctly compile union" in  { pending }
 
-  it should "correctly compile kleene star" in  { pending }
+  it should "correctly compile kleene star" in  {
+    val b = Chars('b')
+    val bSet = b.chars
+    val regex = (ε|b).*
+    val instructions = IndexedSeq(
+      InitStar,
+      CheckProgress,
+      Fork(1, 10),
+      Fork(1, 4),
+      PushEmpty,
+      PushLeft,
+      Jump(4),
+      MatchSet(bSet),
+      PushChar,
+      PushRight,
+      PushStar,
+      Jump(-10),
+      Accept
+    )
+    Compiler.compile(regex) shouldEqual instructions
+  }
   // more tests...
 
   it should "correctly compile complex regexes 1" in {
@@ -39,7 +59,7 @@ class CompileSpec extends FlatSpec with Matchers {
       MatchSet(bSet),
       PushChar,
       PushLeft,
-      Jump(3),
+      Jump(4),
       MatchSet(cSet),
       PushChar,
       PushRight,
