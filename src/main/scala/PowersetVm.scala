@@ -82,7 +82,19 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
 
     // Remove any threads s.t. there exists another thread at the same program
     // point with a smaller Priority.
-    def compact(threads: Set[Thread]): Set[Thread] = ???
+    def compact(threads: Set[Thread]): Set[Thread] = {
+      def iter(todo: Set[Thread], result: Set[Set[Thread]]): Set[Set[Thread]]= {
+        if (todo.isEmpty)
+          result
+        else{
+          val partition = todo.filter(_ == todo.head.pc)
+          iter(todo -- partition, result + partition)
+        }
+      }
+        (Set[Thread]() /: iter(threads, Set())) {
+        (acc, partition) => (acc + partition.minBy(e => e.priority))
+      }
+    }
 
     // Return the result of matching the current string position on all the
     // given threads.
@@ -101,7 +113,7 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
   private case class Thread(pc: Int, progress: Set[Int], priority: String,
     parse: Seq[ParseTree])
 
-  private implicit class ThreadAdvance(thread: Thread) {
+  implicit class ThreadAdvance(thread: Thread) {
     def advance(increment: Int,
                 instruction: Option[Instruction] = None,
                 addProgress: Boolean = false): Thread = {
