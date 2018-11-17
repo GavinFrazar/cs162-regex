@@ -179,6 +179,7 @@ object `package` {
       case Union(re1, re2) => re1.nullable | re2.nullable
       case Complement(re1) => if (re1.nullable == ε) ∅ else ε
       case Intersect(re1, re2) => re1.nullable & re2.nullable
+      case Capture(_, re) => re.nullable
     }
 
     // Returns true iff the language recognized by 're' is empty.
