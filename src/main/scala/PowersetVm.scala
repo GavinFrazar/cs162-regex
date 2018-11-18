@@ -21,10 +21,9 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
 
     // Execute all given threads until they reach either a MatchSet or an Accept
     // instruction; returns the resulting set of Threads.
-//    @annotation.tailrec
+    @annotation.tailrec
     def runUntilMatchOrAccept(thread: Thread, todo: Set[Thread],
                               result: Set[Thread]): Set[Thread] = {
-
       program(thread.pc) match {
         case `Accept` => {
           if (todo.isEmpty)
@@ -62,7 +61,7 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
         }
 
         case Jump(offset: Int) => {
-          runUntilMatchOrAccept(thread.advance(1), todo, result)
+          runUntilMatchOrAccept(thread.advance(offset), todo, result)
         }
 
         case Fork(off1, off2) => {
@@ -70,12 +69,68 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
           runUntilMatchOrAccept(thread.advance(off1), todo + newThread, result) 
         }
 
-        case instruction: Instruction => {
+        case `PushEmpty` => {
+          val newParse = EmptyLeaf +: thread.parse
+          runUntilMatchOrAccept(thread.advance(1, parse=newParse), todo, result)
+        }
+
+        case `PushChar` => runUntilMatchOrAccept(thread.advance(1), todo, result)
+
+        case `PushConcat` => {
+          val right = thread.parse.head
+          val left = thread.parse.tail.head
+          val rest = thread.parse.tail.tail
+          val newParse = ConcatNode(left,right) +: rest 
+          runUntilMatchOrAccept(thread.advance(1, parse=newParse), todo, result)
+        }
+
+        case `PushLeft` => {
+          val newParse = LeftNode(thread.parse.head) +: thread.parse.tail
           runUntilMatchOrAccept(
-            thread.advance(1, Some(instruction)),
+            thread.advance(1, parse=newParse, priority=thread.priority + "l"),
             todo,
             result
           )
+        }
+
+        case `PushRight` => {
+          val newParse = RightNode(thread.parse.head) +: thread.parse.tail
+          runUntilMatchOrAccept(
+            thread.advance(1, parse=newParse, priority=thread.priority + "r"),
+            todo,
+            result
+          )
+        }
+
+        case `InitStar` => {
+          val newParse = StarNode(Seq()) +: thread.parse
+          runUntilMatchOrAccept(thread.advance(1, parse=newParse), todo, result)
+        }
+
+        case `PushStar` => {
+          val body = thread.parse.head
+          val star = thread.parse.tail.head
+          val rest = thread.parse.tail.tail
+          star match {
+            case StarNode(seq) => {
+              val newParse = StarNode(body +: seq) +: rest
+              runUntilMatchOrAccept(
+                thread.advance(1, parse=newParse),
+                todo,
+                result
+              )
+            }
+            case _ => {
+              assert(false, "should be unreachable")
+              runUntilMatchOrAccept(thread, todo, result)
+            }
+          }
+        }
+
+        case PushCapture(name) => {
+          val newParse =
+            CaptureNode(name, thread.parse.head) +: thread.parse.tail
+          runUntilMatchOrAccept(thread.advance(1, parse=newParse), todo, result)
         }
       }
     }
@@ -87,7 +142,7 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
         if (todo.isEmpty)
           result
         else{
-          val partition = todo.filter(_ == todo.head.pc)
+          val partition = todo.filter(thread => thread.pc == todo.head.pc)
           iter(todo -- partition, result + partition)
         }
       }
@@ -98,10 +153,35 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
 
     // Return the result of matching the current string position on all the
     // given threads.
-    val matchStringPosition: (Set[Thread], Char) => Set[Thread] = ???
+    val matchStringPosition: (Set[Thread], Char) => Set[Thread] =
+      (threads: Set[Thread], char: Char) => {
+        threads.filter(
+          thread => program(thread.pc) match {
+            case MatchSet(cs) => cs.contains(char)
+            case _ => false
+          }
+        ).map(thread =>
+          thread.advance(2).copy(parse = CharLeaf(char) +: thread.parse))
+      }
 
     val initialThreads =
       runUntilMatchOrAccept(Thread(0,Set(),"",Seq()), Set(), Set())
+
+    val survivors = (initialThreads /: str){
+      (threads, char) => {
+        val newThreads =
+          runUntilMatchOrAccept(threads.head, threads.tail, Set[Thread]())
+        val survivors = compact(newThreads)
+        matchStringPosition(survivors, char)
+      }
+    }
+    val finalSurvivors: Set[Thread] = compact(survivors)
+    val acceptors: Set[Thread] =
+      finalSurvivors.filter(thread => program(thread.pc) == Accept)
+    if (acceptors.isEmpty)
+      None
+    else
+      Some(acceptors.head.parse.head)
   }
 
   // A thread of execution for the VM, where 'pc' is the program counter,
@@ -113,48 +193,28 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
   private case class Thread(pc: Int, progress: Set[Int], priority: String,
     parse: Seq[ParseTree])
 
-  implicit class ThreadAdvance(thread: Thread) {
+  private implicit class ForkThread(thread: Thread){
+    def forkLeft(): Thread = thread.copy(priority = thread.priority + "l")
+    def forkRight(): Thread = thread.copy(priority = thread.priority + "r")
+  }
+
+  private implicit class ThreadUpdater(thread: Thread) {
     def advance(increment: Int,
-                instruction: Option[Instruction] = None,
-                addProgress: Boolean = false): Thread = {
+                addProgress: Boolean = false,
+                priority: String = thread.priority,
+                parse: Seq[ParseTree] = thread.parse): Thread = {
+
       val progress = addProgress match {
         case false => thread.progress
         case true => thread.progress + thread.pc
       }
 
-      val parse = instruction match {
-        case None => thread.parse
-        case Some(pN) => pN match {
-          case `PushEmpty` => EmptyLeaf +: thread.parse
-          case `PushConcat` => {
-            val right = thread.parse.head
-            val left = thread.parse.tail.head
-            val rest = thread.parse.tail.tail
-            ConcatNode(left,right) +: rest
-          }
-          case `PushLeft` => LeftNode(thread.parse.head) +: thread.parse.tail
-          case `PushRight` => RightNode(thread.parse.head) +: thread.parse.tail
-          case `InitStar` => StarNode(Seq()) +: thread.parse
-          case `PushStar` => {
-            val body = thread.parse.head
-            val star = thread.parse.tail.head
-            val rest = thread.parse.tail.tail
-            star match {
-              case StarNode(seq) => StarNode(body +: seq) +: rest
-              case _ =>
-                assert(false, "should be unreachable")
-                thread.parse
-            }
-          }
-          case PushCapture(name) =>
-            CaptureNode(name, thread.parse.head) +: thread.parse.tail
-        }
-      }
-
-      Thread(thread.pc + increment,
-             progress,
-             thread.priority,
-             parse)
+      Thread(
+        thread.pc + increment,
+        progress,
+        priority,
+        parse
+      )
     }
   }
 }
