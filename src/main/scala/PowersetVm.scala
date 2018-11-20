@@ -54,10 +54,11 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
         }
 
         case MatchSet(chars: CharSet) => {
+          val resetThread = thread.copy(progress=Set[Int]())
           if (todo.isEmpty)
-            result + thread
+            result + resetThread
           else
-            runUntilMatchOrAccept(todo.head, todo.tail, result + thread)
+            runUntilMatchOrAccept(todo.head, todo.tail, result + resetThread)
         }
 
         case Jump(offset: Int) => {
@@ -146,7 +147,8 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
           iter(todo -- partition, result + partition)
         }
       }
-        (Set[Thread]() /: iter(threads, Set())) {
+      val partitions = iter(threads, Set())
+        (Set[Thread]() /: partitions) {
         (acc, partition) => (acc + partition.minBy(e => e.priority))
       }
     }
@@ -158,23 +160,40 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
         threads.filter(
           thread => program(thread.pc) match {
             case MatchSet(cs) => cs.contains(char)
-            case _ => false
+            case Accept => false
+            case _ => {
+              assert(false, "Instruction should be either match or accept")
+              false
+            }
           }
-        ).map(thread =>
-          thread.advance(2).copy(parse = CharLeaf(char) +: thread.parse))
+        ).map(thread => {
+                val newParse = CharLeaf(char) +: thread.parse
+                thread.advance(2, parse=newParse)
+              }
+        )
       }
 
+    val initialThread = Thread(0, Set(), "", Seq())
     val initialThreads =
-      runUntilMatchOrAccept(Thread(0,Set(),"",Seq()), Set(), Set())
+      compact(runUntilMatchOrAccept(initialThread, Set(), Set()))
+    assert(!initialThreads.isEmpty, "There should be at least one init thread.")
 
-    val survivors = (initialThreads /: str){
-      (threads, char) => {
-        val newThreads =
-          runUntilMatchOrAccept(threads.head, threads.tail, Set[Thread]())
-        val survivors = compact(newThreads)
-        matchStringPosition(survivors, char)
+    val survivors = 
+      (initialThreads /: str){
+        (threads, char) => {
+          val matchedThreads = matchStringPosition(threads, char)
+          if (matchedThreads.isEmpty)
+            matchedThreads
+          else
+            compact(
+              runUntilMatchOrAccept(
+                matchedThreads.head,
+                matchedThreads.tail,
+                Set()
+              )
+            )
+        }
       }
-    }
     val finalSurvivors: Set[Thread] = compact(survivors)
     val acceptors: Set[Thread] =
       finalSurvivors.filter(thread => program(thread.pc) == Accept)
