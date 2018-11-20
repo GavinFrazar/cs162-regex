@@ -221,6 +221,17 @@ class PowersetVmSpec extends FlatSpec with Matchers {
 
   // more tests...
 
+  it should "not parse any string for the empty language ∅" in {
+    val str1 = ""
+    val str2 = "a"
+    val str3 = "∅"
+    val program = IndexedSeq(Reject, Accept)
+    val vm = new PowersetVm(program)
+    vm.eval(str1) should equal (None)
+    vm.eval(str2) should equal (None)
+    vm.eval(str3) should equal (None)
+  }
+
   it should "not parse strings not in the empty-word language" in {
     val str = "a"
     val program = IndexedSeq(PushEmpty, Accept)
