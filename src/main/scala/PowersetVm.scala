@@ -176,7 +176,6 @@ class PowersetVm(program: Program) extends VirtualMachine(program) {
     val initialThread = Thread(0, Set(), "", Seq())
     val initialThreads =
       compact(runUntilMatchOrAccept(initialThread, Set(), Set()))
-    assert(!initialThreads.isEmpty, "There should be at least one init thread.")
 
     val survivors = 
       (initialThreads /: str){
