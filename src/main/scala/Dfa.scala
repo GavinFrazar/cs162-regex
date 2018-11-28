@@ -23,7 +23,24 @@ case class Dfa[State](delta: Transitions[State], init: State, fin: Set[State]) {
 
   // Returns a string that causes an arbitrary but non-looping path from the
   // init state to a final state, if such a path exists.
-  def getString: Option[String] = ???
+  def getString(): Option[String] = {
+    def helper(current_state: State,
+               visited: Set[State],
+               acc: String
+    ): Option[String] = {
+      if (fin.contains(current_state))
+        Some(acc + current_state.toString)
+      else{
+        delta(current_state).find(x => visited.contains(x._2) == false) match {
+          case Some((_, state)) => helper(state,
+                                         visited + state,
+                                         acc + current_state.toString)
+          case None => None
+        }
+      }
+    }
+    helper(init, Set(), "")
+  }
 
   //----------------------------------------------------------------------------
   // Private details.
