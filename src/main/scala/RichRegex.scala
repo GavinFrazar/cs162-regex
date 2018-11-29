@@ -4,9 +4,14 @@
 package edu.ucsb.cs.cs162.regex
 
 import edu.ucsb.cs.cs162.regex.derivative._
+import Regex._
 
 object `package` {
-  import Regex._
+  implicit class RegexToDfaAnalysis(re: Regex){
+    def getMatch: Option[String] = {
+      DerivativeAnalysis.analyze(re).getString
+    }
+  }
 
   // Convenient methods to build regular expressions.
   implicit class RegexBuilder(val re: Regex) extends AnyVal {
@@ -294,26 +299,60 @@ object `package` {
     // ambiguity of that sub-expression.
     def unambiguous: Option[(Regex, String)] = {
       def helper(re: Regex): Option[(Regex, String)] = re match{
-        case Chars(cs) => None
         case `∅` => None
         case `ε` => None
+        case Chars(cs) => None
         case Union(r1, r2) => {
-          if ((r1 & r2).nullable == ∅ && helper(r1) == None && helper(r2) == None)
+          val curr = (r1 & r2).empty
+          val left = helper(r1)
+          val right = helper(r1)
+          if (curr && left == None && right == None) 
             None
-          else
-            Some((re, "stub"))
+          else{
+            if (!curr)
+              Some((re, re.getMatch.get))
+            else if (left != None)
+              Some((r1, left.get._2))
+            else
+              Some((r2, right.get._2))
+          }
         }
         case Concatenate(r1, r2) => {
-          if (r1.overlap(r2) == ∅ && helper(r1) == None && helper(r2) == None)
+          val curr = (r1 overlap r2).empty
+          val left = helper(r1)
+          val right = helper(r2)
+          if (curr && left == None && right == None)
             None
-          else
-            Some(re, "stub")
+          else{
+            if (!curr)
+              Some((re, re.getMatch.get))
+            else if (left != None)
+              Some((r1, left.get._2))
+            else
+              Some((r2, right.get._2))
+          }
         }
         case KleeneStar(r) => {
-          if (r.overlap(r.*) == ∅ && helper(r) == None && r.nullable == ∅)
+          val curr = (r overlap r.*).empty
+          val other = helper(r)
+          if (curr && other == None && r.nullable == ∅)
+            None
+          else{
+            if (!curr || r.nullable == ε)
+              Some((re, re.getMatch.get))
+            else
+              Some((r, other.get._2))
+          }
+        }
+        case Capture(str, r) => {
+          if (helper(r) == None)
             None
           else
-            Some(r, "stub")
+            Some(r, r.getMatch.get)
+        }
+        case _ => {
+          assert(false, "We dont handle complement/intersection.")
+          Some(re, "stub")
         }
       }
       helper(re)
