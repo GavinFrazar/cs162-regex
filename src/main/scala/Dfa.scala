@@ -3,6 +3,7 @@
 package edu.ucsb.cs.cs162.dfa
 
 import edu.ucsb.cs.cs162.range_set._
+import scala.collection.immutable.Queue
 
 object `package` {
   type Transitions[State] = Map[State, Seq[(CharSet, State)]]
@@ -24,25 +25,28 @@ case class Dfa[State](delta: Transitions[State], init: State, fin: Set[State]) {
   // Returns a string that causes an arbitrary but non-looping path from the
   // init state to a final state, if such a path exists.
   def getString: Option[String] = {
-    def helper(current_state: State,
-               visited: Set[State],
-               acc: String
-    ): Option[String] = {
-      if (fin.contains(current_state)){
-        Some(acc)
-      }
+    @annotation.tailrec
+    def helper(queue: Queue[(State, String)],
+               visited: Set[State]): Option[String] = {
+      if (queue.isEmpty)
+        None
       else{
-        val paths = delta(current_state) filter
-        {x => !visited.contains(x._2)} map
-        {x => helper(x._2, visited + x._2, acc + x._1.minElement.get)} filter
-        {x => x != None}
-        if (paths.isEmpty)
-          None
-        else
-          paths.head
+        val ((current_state, acc), tail) = queue.dequeue
+        if (fin.contains(current_state)){
+          Some(acc)
+        }
+        else{
+          val adjacent_states = delta(current_state) filter {
+            case(_, state) => !visited.contains(state)
+          }
+          val todo = adjacent_states map {
+            case(cs, state) => (state, acc + cs.minElement.get)
+          }
+          helper(tail ++ todo, visited + current_state)
+        }
       }
     }
-    helper(init, Set(init), "")
+    helper(Queue((init, "")), Set())
   }
 
   //----------------------------------------------------------------------------
