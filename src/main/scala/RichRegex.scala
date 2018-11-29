@@ -8,7 +8,7 @@ import Regex._
 
 object `package` {
   implicit class RegexToDfaAnalysis(re: Regex){
-    def getMatch: Option[String] = {
+    def getString: Option[String] = {
       DerivativeAnalysis.analyze(re).getString
     }
   }
@@ -299,16 +299,15 @@ object `package` {
     // ambiguity of that sub-expression.
     def unambiguous: Option[(Regex, String)] = {
       def helper(re: Regex): Option[(Regex, String)] = re match{
-        case `∅` => None
+        case `∅` | _: Chars => None
         case `ε` => None
-        case Chars(cs) => None
         case Union(r1, r2) => {
           val curr = (r1 & r2)
           val left = helper(r1)
-          val right = helper(r1)
+          val right = helper(r2)
           return (curr.empty, left, right) match {
             case (true, None, None) => None
-            case (false, _, _) => Some(re -> curr.getMatch.get)
+            case (false, _, _) => Some(re -> curr.getString.get)
             case (_, Some((_, str)), _) => Some(r1 -> str)
             case (_, _, Some((_, str))) => Some(r2 -> str)
           }
@@ -319,7 +318,7 @@ object `package` {
           val right = helper(r2)
           return (curr.empty, left, right) match {
             case (true, None, None) => None
-            case (false, _, _) => Some(re -> curr.getMatch.get)
+            case (false, _, _) => Some(re -> curr.getString.get)
             case (_, Some((_,str)), _) => Some(r1 -> str)
             case (_, _, Some((_,str))) => Some(r2 -> str)
           }
@@ -329,7 +328,7 @@ object `package` {
           val other = helper(r)
           return (curr.empty && r.nullable == ∅, other) match {
             case (true, None) => None
-            case (false, _) => Some(re -> curr.getMatch.get)
+            case (false, _) => Some(re -> curr.getString.get)
             case (_, Some((_, str))) => Some(r -> str)
           }
         }
@@ -339,9 +338,9 @@ object `package` {
             case Some((_,str)) => Some(r -> str)
           }
         }
-        case _ => {
+        case _: Complement | _: Intersect => {
           assert(false, "We dont handle complement/intersection.")
-          Some(re -> "stub")
+          Some(∅ -> "stub")
         }
       }
       helper(re)

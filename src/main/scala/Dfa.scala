@@ -36,10 +36,9 @@ case class Dfa[State](delta: Transitions[State], init: State, fin: Set[State]) {
           Some(acc)
         }
         else{
-          val adjacent_states = delta(current_state) filter {
+          val todo = delta(current_state) filter {
             case(_, state) => !visited.contains(state)
-          }
-          val todo = adjacent_states map {
+          } map {
             case(cs, state) => state -> (acc + cs.minElement.get)
           }
           helper(tail ++ todo, visited + current_state)
