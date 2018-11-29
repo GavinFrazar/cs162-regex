@@ -23,23 +23,26 @@ case class Dfa[State](delta: Transitions[State], init: State, fin: Set[State]) {
 
   // Returns a string that causes an arbitrary but non-looping path from the
   // init state to a final state, if such a path exists.
-  def getString(): Option[String] = {
+  def getString: Option[String] = {
     def helper(current_state: State,
                visited: Set[State],
                acc: String
     ): Option[String] = {
-      if (fin.contains(current_state))
-        Some(acc + current_state.toString)
+      if (fin.contains(current_state)){
+        Some(acc)
+      }
       else{
-        delta(current_state).find(x => visited.contains(x._2) == false) match {
-          case Some((_, state)) => helper(state,
-                                         visited + state,
-                                         acc + current_state.toString)
-          case None => None
-        }
+        val paths = delta(current_state) filter
+        {x => !visited.contains(x._2)} map
+        {x => helper(x._2, visited + x._2, acc + x._1.minElement.get)} filter
+        {x => x != None}
+        if (paths.isEmpty)
+          None
+        else
+          paths.head
       }
     }
-    helper(init, Set(), "")
+    helper(init, Set(init), "")
   }
 
   //----------------------------------------------------------------------------
