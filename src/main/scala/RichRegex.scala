@@ -303,56 +303,45 @@ object `package` {
         case `ε` => None
         case Chars(cs) => None
         case Union(r1, r2) => {
-          val curr = (r1 & r2).empty
+          val curr = (r1 & r2)
           val left = helper(r1)
           val right = helper(r1)
-          if (curr && left == None && right == None) 
-            None
-          else{
-            if (!curr)
-              Some((re, re.getMatch.get))
-            else if (left != None)
-              Some((r1, left.get._2))
-            else
-              Some((r2, right.get._2))
+          return (curr.empty, left, right) match {
+            case (true, None, None) => None
+            case (false, _, _) => Some(re -> curr.getMatch.get)
+            case (_, Some((_, str)), _) => Some(r1 -> str)
+            case (_, _, Some((_, str))) => Some(r2 -> str)
           }
         }
         case Concatenate(r1, r2) => {
-          val curr = (r1 overlap r2).empty
+          val curr = (r1 overlap r2)
           val left = helper(r1)
           val right = helper(r2)
-          if (curr && left == None && right == None)
-            None
-          else{
-            if (!curr)
-              Some((re, re.getMatch.get))
-            else if (left != None)
-              Some((r1, left.get._2))
-            else
-              Some((r2, right.get._2))
+          return (curr.empty, left, right) match {
+            case (true, None, None) => None
+            case (false, _, _) => Some(re -> curr.getMatch.get)
+            case (_, Some((_,str)), _) => Some(r1 -> str)
+            case (_, _, Some((_,str))) => Some(r2 -> str)
           }
         }
         case KleeneStar(r) => {
-          val curr = (r overlap r.*).empty
+          val curr = (r overlap r.*)
           val other = helper(r)
-          if (curr && other == None && r.nullable == ∅)
-            None
-          else{
-            if (!curr || r.nullable == ε)
-              Some((re, re.getMatch.get))
-            else
-              Some((r, other.get._2))
+          return (curr.empty && r.nullable == ∅, other) match {
+            case (true, None) => None
+            case (false, _) => Some(re -> curr.getMatch.get)
+            case (_, Some((_, str))) => Some(r -> str)
           }
         }
         case Capture(str, r) => {
-          if (helper(r) == None)
-            None
-          else
-            Some(r, r.getMatch.get)
+          return helper(r) match {
+            case None => None
+            case Some((_,str)) => Some(r -> str)
+          }
         }
         case _ => {
           assert(false, "We dont handle complement/intersection.")
-          Some(re, "stub")
+          Some(re -> "stub")
         }
       }
       helper(re)
