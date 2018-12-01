@@ -8,6 +8,10 @@ import edu.ucsb.cs.cs162.regex.derivative.DerivativeAnalysis._
 class DfaSpec extends FlatSpec with Matchers with OptionValues {
   import Regex._
 
+  val b = Chars('b')
+  val c = Chars('c')
+  val d = Chars('d')
+
   behavior of "Dfa.getString"
 
   it should "return None if the DFA's language is empty 1" in {
@@ -25,7 +29,21 @@ class DfaSpec extends FlatSpec with Matchers with OptionValues {
     dfa matches s shouldEqual true
   }
 
-  it should "return the only string recognized by aabbcc" in {
+
+  it should "return a string that the DFA recognizes if the DFA's language is not empty 2" in {
+    val δ: Transitions[Regex] = Map(Concatenate(b,c) → Seq(CharSet('b') -> c,
+                                                           !CharSet('b') -> ∅),
+                                    c -> Seq(CharSet('c') -> ε,
+                                            !CharSet('c') -> ∅),
+                                    ε -> Seq(!CharSet() -> ∅),
+                                    ∅ -> Seq(!CharSet() -> ∅))
+    val dfa = Dfa(δ, Concatenate(b,c), Set[Regex](ε))
+    val s = dfa.getString.value
+    dfa matches s shouldEqual true
+  }
+
+
+  it should "return a string recognized by aabbcc" in {
     val dfa = analyze("aabbcc".concatenate)
     dfa.getString shouldEqual Some("aabbcc")
   }
