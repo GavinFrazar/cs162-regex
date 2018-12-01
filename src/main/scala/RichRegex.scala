@@ -306,10 +306,10 @@ object `package` {
           val left = helper(r1)
           val right = helper(r2)
           return (curr.empty, left, right) match {
-            case (true, None, None) => None
-            case (false, _, _) => Some(re -> curr.getString.get)
             case (_, Some((_, str)), _) => Some(r1 -> str)
             case (_, _, Some((_, str))) => Some(r2 -> str)
+            case (false, _, _) => Some(re -> curr.getString.get)
+            case (true, None, None) => None
           }
         }
         case Concatenate(r1, r2) => {
@@ -317,30 +317,30 @@ object `package` {
           val left = helper(r1)
           val right = helper(r2)
           return (curr.empty, left, right) match {
-            case (true, None, None) => None
-            case (false, _, _) => Some(re -> curr.getString.get)
             case (_, Some((_,str)), _) => Some(r1 -> str)
             case (_, _, Some((_,str))) => Some(r2 -> str)
+            case (false, _, _) => Some(re -> curr.getString.get)
+            case (true, None, None) => None
           }
         }
         case KleeneStar(r) => {
           val curr = (r overlap r.*)
           val other = helper(r)
           return (curr.empty && r.nullable == ∅, other) match {
-            case (true, None) => None
-            case (false, _) => Some(re -> curr.getString.get)
             case (_, Some((_, str))) => Some(r -> str)
+            case (false, _) => Some(re -> re.getString.get)
+            case (true, None) => None
           }
         }
         case Capture(str, r) => {
           return helper(r) match {
-            case None => None
             case Some((_,str)) => Some(r -> str)
+            case None => None
           }
         }
         case _: Complement | _: Intersect => {
           assert(false, "We dont handle complement/intersection.")
-          Some(∅ -> "stub")
+          None
         }
       }
       helper(re)
