@@ -306,8 +306,8 @@ object `package` {
           val left = helper(r1)
           val right = helper(r2)
           return (curr.empty, left, right) match {
-            case (_, Some((_, str)), _) => Some(r1 -> str)
-            case (_, _, Some((_, str))) => Some(r2 -> str)
+            case (_, Some((subexpr, str)), _) => Some(subexpr -> str)
+            case (_, _, Some((subexpr, str))) => Some(subexpr -> str)
             case (false, _, _) => Some(re -> curr.getString.get)
             case (true, None, None) => None
           }
@@ -317,8 +317,8 @@ object `package` {
           val left = helper(r1)
           val right = helper(r2)
           return (curr.empty, left, right) match {
-            case (_, Some((_,str)), _) => Some(r1 -> str)
-            case (_, _, Some((_,str))) => Some(r2 -> str)
+            case (_, Some((subexpr,str)), _) => Some(subexpr -> str)
+            case (_, _, Some((subexpr,str))) => Some(subexpr -> str)
             case (false, _, _) => Some(re -> curr.getString.get)
             case (true, None, None) => None
           }
@@ -326,15 +326,16 @@ object `package` {
         case KleeneStar(r) => {
           val curr = (r overlap r.*)
           val other = helper(r)
-          return (curr.empty && r.nullable == ∅, other) match {
-            case (_, Some((_, str))) => Some(r -> str)
-            case (false, _) => Some(re -> re.getString.get)
-            case (true, None) => None
+          return (curr.empty,  r.nullable == ∅, other) match {
+            case (_, _, Some((subexpr, str))) => Some(subexpr -> str)
+            case (_, false, _) => Some(re -> re.getString.get)
+            case (false, true, _) => Some(re -> curr.getString.get)
+            case (true, true, None) => None
           }
         }
-        case Capture(str, r) => {
+        case Capture(_, r) => {
           return helper(r) match {
-            case Some((_,str)) => Some(r -> str)
+            case Some((subexpr,str)) => Some(subexpr -> str)
             case None => None
           }
         }
