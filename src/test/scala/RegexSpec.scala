@@ -16,6 +16,7 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
   val d = Chars('d')
   val e = Chars('e')
   val f = Chars('f')
+  val complex_unambiguous = (b^6) ~ (c^6) ~ (c | ε)
 
   val r = Chars('a') | Chars('b').+
   val r1 = Chars('x', 'y').* ~ r
@@ -232,20 +233,211 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
   behavior of "ambiguity type checker"
 
   it should "find the ambiguous subexpression and a witness string in an ambiguous regex" in {
-    val a = Chars('a')
-    val b = Chars('b')
-    val r = a ~ (b | ε) ~ (b | ε)
+    val r = c ~ (b | ε) ~ (b | ε)
     val (ambiguousSubexpr, witness) = r.unambiguous.value
     ambiguousSubexpr should equal ((b | ε) ~ (b | ε))
     new DerivativeMachine(ambiguousSubexpr).eval(witness) shouldEqual true
   }
 
-  // more tests...
 
-  it should "return None if the string is unambiguous" in {
+  it should "find the ambiguous subexpression and a witness string in an ambiguous regex 3" in {
     val a = Chars('a')
     val b = Chars('b')
-    val r = a ~ (b | ε)
+    val r = Union(a|b, b)
+    val (ambiguousSubexpr, witness) = r.unambiguous.value
+    ambiguousSubexpr should equal (r)
+    new DerivativeMachine(ambiguousSubexpr).eval(witness) shouldEqual true
+  }
+
+
+  it should "return None if the expression is ∅" in {
+    ∅.unambiguous shouldEqual None
+  }
+
+
+  it should "return None if the expression is Chars" in {
+    b.unambiguous shouldEqual None
+    α.unambiguous shouldEqual None
+  }
+
+
+  it should "return None if the expression is ε" in {
+    ε.unambiguous shouldEqual None
+  }
+
+
+  it should """find the ambiguous subexpression and a witness string in an
+            |ambiguous regex, where the ambiguity is due to intersection
+            |of inner expressions of a Union"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val r = Union(b, b)
+      val (ambiguousExpr, witness) = r.unambiguous.value
+      ambiguousExpr shouldEqual r
+      new DerivativeMachine(ambiguousExpr).eval(witness) shouldEqual true
+    }
+
+
+  it should """find the ambiguous subexpression and a witness string in an
+               |ambiguous regex, where the ambiguity is found
+               |in the left or right inner expression of a union"""
+    .stripMargin.replaceAll("\n"," ") in {
+      val ambiguity = ((c^2).* ~ (c^4).*)
+      val r1 = Union(b, ambiguity)
+      val r2 = Union(ambiguity, b)
+      val (ambiguousSubexprRight, witnessRight) = r1.unambiguous.value
+      val (ambiguousSubexprLeft, witnessLeft) = r2.unambiguous.value
+      val dvm = DerivativeMachine(ambiguity)
+      ambiguousSubexprRight shouldEqual ambiguity
+      ambiguousSubexprLeft shouldEqual ambiguity
+      dvm.eval(witnessRight) shouldEqual true
+      dvm.eval(witnessLeft) shouldEqual true
+  }
+
+
+  it should """return None if the regex is an unambiguous Union""" in {
+    val r = Union(complex_unambiguous, d)
+    r.unambiguous shouldEqual None
+  }
+
+
+  it should """find the ambiguous subexpression and a witness string in an
+            |ambiguous regex, where the ambiguity is due to overlap
+            |of children of a Concatenation"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val r = Concatenate(b.?, b.?)
+      val (ambiguousExpr, witness) = r.unambiguous.value
+      ambiguousExpr shouldEqual r
+      new DerivativeMachine(ambiguousExpr).eval(witness) shouldEqual true
+    }
+
+
+  it should """find the ambiguous subexpression and a witness string in an
+            |ambiguous regex, where the ambiguity is found in the left or right
+            |of a Concatenation"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val ambiguity = ((c^2).* ~ (c^4).*)  
+      val r1 = Concatenate(b, ambiguity)
+      val r2 = Concatenate(ambiguity, b)
+      val (ambiguousSubexprRight, witnessRight) = r1.unambiguous.value
+      val (ambiguousSubexprLeft, witnessLeft) = r2.unambiguous.value
+      val dvm = DerivativeMachine(ambiguity)
+      ambiguousSubexprRight shouldEqual ambiguity
+      ambiguousSubexprLeft shouldEqual ambiguity 
+      dvm.eval(witnessLeft) shouldEqual true
+      dvm.eval(witnessRight) shouldEqual true
+    }
+
+
+  it should """return None if the regex is an unambiguous Concatenation""" in {
+    val r = Concatenate(complex_unambiguous, complex_unambiguous)
+    r.unambiguous shouldEqual None
+  }
+
+
+  it should """find the ambiguous subexpression and a witness string in an
+            |ambiguous regex, where the ambiguity is due to either overlap
+            |or a nullable inner expression of a KleeneStar"""
+    .stripMargin.replaceAll("\n", " ") in {
+
+      //inner1 is not nullable but (inner1 overlap inner1.*) is not empty
+      val inner1 = Concatenate(Union(b,ε), b)
+      inner1.nullable shouldEqual ∅
+      (inner1 overlap inner1.*).empty shouldEqual false
+      val r1 = KleeneStar(inner1)
+      
+      //inner is nullable but (inner overlap inner.*) is empty
+      val inner2 = ε 
+      inner2.nullable shouldEqual ε
+      (inner2 overlap inner2.*).empty shouldEqual true
+      val r2 = KleeneStar(inner2)
+      val (ambiguousExpr1, witness_overlap) = r1.unambiguous.value
+      val (ambiguousExpr2, witness_nullable) = r2.unambiguous.value
+      ambiguousExpr1 shouldEqual r1
+      ambiguousExpr2 shouldEqual r2
+      val dvm1 = new DerivativeMachine(r1)
+      val dvm2 = new DerivativeMachine(r2)
+      dvm1.eval(witness_overlap) shouldEqual true
+      dvm2.eval(witness_nullable) shouldEqual true
+      witness_nullable shouldEqual ""
+    }
+
+  it should """find the ambiguous subexpression and a witness string in an
+            |ambiguous regex, where the ambiguity is due to an ambiguous
+            |inner expression of a KleeneStar"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val ambiguity = b.? ~ b.?
+      val r = KleeneStar(ambiguity)
+      val (ambiguousSubexpr, witness) = r.unambiguous.value
+      ambiguousSubexpr shouldEqual ambiguity
+      val dvm = new DerivativeMachine(ambiguousSubexpr)
+      dvm.eval(witness) shouldEqual true
+    }
+
+
+  it should """return None if the regex is an unambiguous KleeneStar""" in {
+    val r = KleeneStar(complex_unambiguous)
+    r.unambiguous shouldEqual None
+  }
+
+
+  it should """find the ambiguous subexpression and a witness string in an
+            |ambiguous regex, where the ambiguity is found in the child
+            |of a capture"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val r = Capture("FooBar", b.? ~ b.?)
+      val (ambiguousSubexpr, witness) = r.unambiguous.value
+      ambiguousSubexpr should equal (b.? ~ b.?)
+      (new DerivativeMachine(ambiguousSubexpr)).eval(witness)
+    }
+
+
+  it should """return None if the regex is an unambiguous Capture""" in {
+    val r = Capture("FooBar", complex_unambiguous)
+    r.unambiguous shouldEqual None
+  }
+
+
+  it should """return the left-most ambiguous subexpression in a complex
+               |expression which contains multiple ambiguous subexpressions"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val r = Capture("foo", KleeneStar(
+                        Concatenate(b.? ~ b.?, Union(c.? ~ c.?, d.? ~ d.?))))
+      val (ambiguousSubexpr, witness) = r.unambiguous.value 
+      ambiguousSubexpr should equal (b.? ~ b.?)
+      val dvm = new DerivativeMachine(ambiguousSubexpr)
+      dvm.eval(witness) shouldEqual true
+    }
+
+
+  it should """return the right-child ambiguous subexpression in a complex
+               |expression which contains multiple ambiguous subexpressions,
+               |and no ambiguity in its left child"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val r = Capture("foo", KleeneStar(Concatenate(b, Union(c, d.? ~ d.?))))
+      val (ambiguousSubexpr, witness) = r.unambiguous.value
+      ambiguousSubexpr should equal (d.? ~ d.?)
+      val dvm = new DerivativeMachine(ambiguousSubexpr)
+      dvm.eval(witness) shouldEqual true
+    }
+
+
+  it should """return the correct ambiguous subexpression in a complex
+               |expression which contains multiple ambiguous subexpressions"""
+    .stripMargin.replaceAll("\n", " ") in {
+      val r = Concatenate(
+        Concatenate((b.? | c) ~ (b | c.?), d.? ~ d.?),
+        c.? ~ c.?)
+      val (ambiguousSubexpr, witness) = r.unambiguous.value
+      ambiguousSubexpr should equal ((b.? | c) ~ (b | c.?))
+      val dvm = new DerivativeMachine(ambiguousSubexpr)
+      dvm.eval(witness) shouldEqual true
+    }
+
+
+  // more tests...
+
+  it should "return None if the expression is unambiguous" in {
+    val r = complex_unambiguous
     r.unambiguous shouldEqual None
   }
 
