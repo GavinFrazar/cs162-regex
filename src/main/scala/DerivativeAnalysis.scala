@@ -85,6 +85,7 @@ object DerivativeAnalysis {
         case `ε` => C(r)
         case _ => C(r) ^ C(s)
       }
+      case Capture(str, r) => C(r)
     }
   }
 
