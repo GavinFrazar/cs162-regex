@@ -328,8 +328,8 @@ object `package` {
           val other = helper(r)
           return (curr.empty,  r.nullable == ∅, other) match {
             case (_, _, Some((subexpr, str))) => Some(subexpr -> str)
-            case (_, false, _) => Some(re -> re.getString.get)
-            case (false, true, _) => Some(re -> curr.getString.get)
+            case (_, false, None) => Some(re -> re.getString.get)
+            case (false, true, None) => Some(re -> curr.getString.get)
             case (true, true, None) => None
           }
         }

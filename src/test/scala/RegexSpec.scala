@@ -273,7 +273,8 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
       val r = Union(b, b)
       val (ambiguousExpr, witness) = r.unambiguous.value
       ambiguousExpr shouldEqual r
-      new DerivativeMachine(ambiguousExpr).eval(witness) shouldEqual true
+      val dvm = new DerivativeMachine(ambiguousExpr)
+      dvm.eval(witness) shouldEqual true
     }
 
 
@@ -286,17 +287,19 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
       val r2 = Union(ambiguity, b)
       val (ambiguousSubexprRight, witnessRight) = r1.unambiguous.value
       val (ambiguousSubexprLeft, witnessLeft) = r2.unambiguous.value
-      val dvm = DerivativeMachine(ambiguity)
       ambiguousSubexprRight shouldEqual ambiguity
       ambiguousSubexprLeft shouldEqual ambiguity
+      val dvm = DerivativeMachine(ambiguity)
       dvm.eval(witnessRight) shouldEqual true
       dvm.eval(witnessLeft) shouldEqual true
   }
 
 
   it should """return None if the regex is an unambiguous Union""" in {
-    val r = Union(complex_unambiguous, d)
-    r.unambiguous shouldEqual None
+    val r1 = Union(complex_unambiguous, d)
+    val r2 = Union(d, complex_unambiguous)
+    r1.unambiguous shouldEqual None
+    r2.unambiguous shouldEqual None
   }
 
 
@@ -307,7 +310,8 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
       val r = Concatenate(b.?, b.?)
       val (ambiguousExpr, witness) = r.unambiguous.value
       ambiguousExpr shouldEqual r
-      new DerivativeMachine(ambiguousExpr).eval(witness) shouldEqual true
+      val dvm = new DerivativeMachine(ambiguousExpr)
+      dvm.eval(witness) shouldEqual true
     }
 
 
@@ -329,8 +333,10 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
 
 
   it should """return None if the regex is an unambiguous Concatenation""" in {
-    val r = Concatenate(complex_unambiguous, complex_unambiguous)
-    r.unambiguous shouldEqual None
+    val r1 = Concatenate(complex_unambiguous, d)
+    val r2 = Concatenate(d, complex_unambiguous)
+    r1.unambiguous shouldEqual None
+    r2.unambiguous shouldEqual None
   }
 
 
@@ -350,6 +356,7 @@ class RegexSpec extends FlatSpec with Matchers with OptionValues {
       inner2.nullable shouldEqual ε
       (inner2 overlap inner2.*).empty shouldEqual true
       val r2 = KleeneStar(inner2)
+
       val (ambiguousExpr1, witness_overlap) = r1.unambiguous.value
       val (ambiguousExpr2, witness_nullable) = r2.unambiguous.value
       ambiguousExpr1 shouldEqual r1

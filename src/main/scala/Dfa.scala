@@ -25,13 +25,14 @@ case class Dfa[State](delta: Transitions[State], init: State, fin: Set[State]) {
   // Returns a string that causes an arbitrary but non-looping path from the
   // init state to a final state, if such a path exists.
   def getString: Option[String] = {
+    //breadth-first-search for an accepted string
     @annotation.tailrec
     def helper(queue: Queue[(State, String)],
                visited: Set[State]): Option[String] = {
       if (queue.isEmpty)
         None
       else{
-        val ((current_state, acc), tail) = queue.dequeue
+        val ((current_state, acc), tail_queue) = queue.dequeue
         if (fin.contains(current_state)){
           Some(acc)
         }
@@ -41,11 +42,14 @@ case class Dfa[State](delta: Transitions[State], init: State, fin: Set[State]) {
           } map {
             case(cs, state) => state -> (acc + cs.minElement.get)
           }
-          helper(tail ++ todo, visited + current_state)
+          helper(tail_queue ++ todo, visited + current_state)
         }
       }
     }
-    helper(Queue(init -> ""), Set())
+    if (fin.isEmpty)
+      None
+    else
+      helper(Queue(init -> ""), Set())
   }
 
   //----------------------------------------------------------------------------
